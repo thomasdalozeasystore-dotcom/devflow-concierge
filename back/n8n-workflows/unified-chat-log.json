@@ -1,0 +1,125 @@
+{
+    "name": "Unified Chat Log - All Services",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "chat-log",
+                "options": {}
+            },
+            "id": "unified-chat-webhook",
+            "name": "Chat Log Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ],
+            "webhookId": "unified-chat-log-webhook"
+        },
+        {
+            "parameters": {
+                "functionCode": "const body = items[0].json;\n\nconst sessionId = body.session_id || null;\nconst serviceType = body.service_type || 'WEB_DEV';\nconst companyName = body.company_name || null;\nconst phone = body.phone || null;\nconst role = body.role || 'user';\nconst content = body.content || '';\nconst timestamp = body.timestamp || new Date().toISOString();\n\nreturn [\n  {\n    json: {\n      session_id: sessionId,\n      service_type: serviceType,\n      company_name: companyName,\n      phone: phone,\n      role: role,\n      content: content,\n      timestamp: timestamp\n    }\n  }\n];"
+            },
+            "id": "prepare-data-node",
+            "name": "Prepare Data",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "schema": "public",
+                "table": "chat_logs",
+                "columns": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "session_id": "={{ $json.session_id }}",
+                        "service_type": "={{ $json.service_type }}",
+                        "company_name": "={{ $json.company_name }}",
+                        "phone": "={{ $json.phone }}",
+                        "role": "={{ $json.role }}",
+                        "content": "={{ $json.content }}",
+                        "timestamp": "={{ $json.timestamp }}"
+                    }
+                },
+                "options": {}
+            },
+            "id": "insert-chat-log",
+            "name": "Insert Chat Log",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2,
+            "position": [
+                650,
+                300
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "{{POSTGRES_CREDENTIAL_ID}}",
+                    "name": "Postgres account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ { \"status\": \"ok\", \"service\": $json.service_type, \"session_id\": $json.session_id } }}",
+                "options": {}
+            },
+            "id": "respond-node",
+            "name": "Respond",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                850,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Chat Log Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Data": {
+            "main": [
+                [
+                    {
+                        "node": "Insert Chat Log",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Insert Chat Log": {
+            "main": [
+                [
+                    {
+                        "node": "Respond",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {},
+    "versionId": "1",
+    "id": "unified-chat-log",
+    "meta": {
+        "instanceId": "n8n-local"
+    },
+    "tags": []
+}

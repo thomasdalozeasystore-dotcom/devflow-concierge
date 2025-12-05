@@ -1,0 +1,126 @@
+{
+    "name": "Chat Log to PostgreSQL - Video Services",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "chat-log-video-services",
+                "options": {}
+            },
+            "id": "WebhookChatLogVideoServices",
+            "name": "Chat Log Webhook - Video Services",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                260,
+                300
+            ],
+            "webhookId": "chat-log-video-services-webhook-id"
+        },
+        {
+            "parameters": {
+                "functionCode": "const body = items[0].json;\n\nconst sessionId = body.session_id || null;\nconst serviceType = 'VIDEO_PROCESSING';\nconst companyName = body.company_name || null;\nconst phone = body.phone || null;\nconst role = body.role || 'user';\nconst content = body.content || '';\nconst timestamp = body.timestamp || new Date().toISOString();\n\nreturn [\n  {\n    json: {\n      session_id: sessionId,\n      service_type: serviceType,\n      company_name: companyName,\n      phone: phone,\n      role: role,\n      content: content,\n      timestamp: timestamp\n    }\n  }\n];"
+            },
+            "id": "FunctionPrepareDataVideoServices",
+            "name": "Prepare Data",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                520,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "insert",
+                "schema": "public",
+                "table": "chat_logs",
+                "columns": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "session_id": "={{ $json.session_id }}",
+                        "service_type": "={{ $json.service_type }}",
+                        "company_name": "={{ $json.company_name }}",
+                        "phone": "={{ $json.phone }}",
+                        "role": "={{ $json.role }}",
+                        "content": "={{ $json.content }}",
+                        "timestamp": "={{ $json.timestamp }}"
+                    }
+                },
+                "options": {}
+            },
+            "id": "PostgresInsertVideoServices",
+            "name": "Insert Chat Log",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2,
+            "position": [
+                800,
+                300
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "REPLACE_WITH_YOUR_POSTGRES_CREDENTIAL_ID",
+                    "name": "PostgreSQL"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ { \"status\": \"ok\", \"service\": \"VIDEO_PROCESSING\", \"session_id\": $json.session_id } }}"
+            },
+            "id": "RespondChatLogVideoServices",
+            "name": "Respond",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                1080,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Chat Log Webhook - Video Services": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Data": {
+            "main": [
+                [
+                    {
+                        "node": "Insert Chat Log",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Insert Chat Log": {
+            "main": [
+                [
+                    {
+                        "node": "Respond",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": true,
+    "settings": {
+        "executionOrder": "v1",
+        "callerPolicy": "workflowsFromSameOwner",
+        "executionTimeout": -1
+    },
+    "versionId": "chat-log-video-services-v1",
+    "id": "ChatLogVideoServices",
+    "tags": []
+}

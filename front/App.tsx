@@ -180,6 +180,95 @@ export default function App() {
     localStorage.setItem('n8n_url', url);
   };
 
+  // Sample conversations for each service type
+  const getSampleConversation = (serviceName: string) => {
+    const conversations = {
+      'WEB_DEV': [
+        { role: 'user', content: 'Hello, I need a website for my restaurant business.' },
+        { role: 'model', content: 'Great! Can you tell me more about your restaurant and what features you need?' },
+        { role: 'user', content: 'We need online reservations, menu display, and contact information.' },
+        { role: 'model', content: 'Perfect! Do you need online ordering or just reservations?' },
+        { role: 'user', content: 'Both would be great. Also, we want to showcase our chef and special dishes.' },
+        { role: 'model', content: 'Excellent! What is your budget range for this project?' },
+        { role: 'user', content: 'Around 5000-7000 euros. When can we start?' }
+      ],
+      'APP_DEV': [
+        { role: 'user', content: 'I want to create a fitness tracking mobile app.' },
+        { role: 'model', content: 'Interesting! Which platforms do you need - iOS, Android, or both?' },
+        { role: 'user', content: 'Both iOS and Android. Users should track workouts and nutrition.' },
+        { role: 'model', content: 'Do you need integration with wearables like Apple Watch or Fitbit?' },
+        { role: 'user', content: 'Yes, Apple Watch and Google Fit integration would be essential.' },
+        { role: 'model', content: 'Will users need to create accounts? Do you need a backend system?' },
+        { role: 'user', content: 'Yes, with social features to share progress with friends.' }
+      ],
+      'IMAGE_PROCESSING': [
+        { role: 'user', content: 'I need to process 500 product photos for my e-commerce site.' },
+        { role: 'model', content: 'What kind of processing do you need - background removal, color correction, or resizing?' },
+        { role: 'user', content: 'Background removal and consistent white backgrounds for all products.' },
+        { role: 'model', content: 'What are the current image formats and what output format do you prefer?' },
+        { role: 'user', content: 'They are JPG and PNG, I need high-quality PNG with transparent backgrounds.' },
+        { role: 'model', content: 'Do you need any retouching or enhancement of the products themselves?' },
+        { role: 'user', content: 'Yes, some color correction and brightness adjustment would be helpful.' }
+      ],
+      'VIDEO_PROCESSING': [
+        { role: 'user', content: 'I have raw footage from a corporate event that needs editing.' },
+        { role: 'model', content: 'How much footage do you have and what is the desired final video length?' },
+        { role: 'user', content: 'About 4 hours of footage, final video should be 10-15 minutes.' },
+        { role: 'model', content: 'Do you need color grading, transitions, music, or text overlays?' },
+        { role: 'user', content: 'Yes, professional color grading, smooth transitions, and our company branding.' },
+        { role: 'model', content: 'What is your deadline and what format do you need for delivery?' },
+        { role: 'user', content: 'We need it in 2 weeks, MP4 format for YouTube and social media.' }
+      ]
+    };
+    return conversations[serviceName] || conversations['WEB_DEV'];
+  };
+
+  // Trigger n8n workflow with complete conversation
+  const triggerN8nWorkflow = async (serviceName: string) => {
+    try {
+      const url = `http://localhost:5678/webhook/chat-log`;
+      const conversation = getSampleConversation(serviceName);
+      const currentSessionId = crypto.randomUUID();
+
+      console.log(`🚀 Generating sample conversation for ${serviceName}...`);
+
+      // Send each message in the conversation
+      for (let i = 0; i < conversation.length; i++) {
+        const message = conversation[i];
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            session_id: currentSessionId,
+            service_type: serviceName,
+            company_name: clientInfo.companyName || 'Sample Company',
+            phone: clientInfo.phone || '+33123456789',
+            role: message.role,
+            content: message.content,
+            timestamp: new Date(Date.now() + i * 1000).toISOString() // Stagger timestamps
+          }),
+        });
+
+        if (!response.ok) {
+          console.error(`❌ Failed to send message ${i + 1}: ${response.statusText}`);
+          return;
+        }
+
+        // Small delay between messages
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      console.log(`✅ Successfully generated ${conversation.length} messages for ${serviceName}`);
+      console.log(`📊 Session ID: ${currentSessionId}`);
+
+    } catch (error) {
+      console.error('❌ Error triggering n8n workflow:', error);
+    }
+  };
+
 
 
 
@@ -335,6 +424,37 @@ export default function App() {
                 onStart={handleStartCall}
                 onEnd={handleEndCall}
               />
+
+              {/* n8n Test Buttons */}
+              <div className="bg-white border-t border-slate-200 p-4">
+                <p className="text-xs font-semibold text-slate-600 mb-3 uppercase tracking-wide">Test n8n Workflows</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => triggerN8nWorkflow('WEB_DEV')}
+                    className="px-3 py-2 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                  >
+                    🌐 Test Website Chat
+                  </button>
+                  <button
+                    onClick={() => triggerN8nWorkflow('APP_DEV')}
+                    className="px-3 py-2 text-xs font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors"
+                  >
+                    📱 Test Mobile App Chat
+                  </button>
+                  <button
+                    onClick={() => triggerN8nWorkflow('IMAGE_PROCESSING')}
+                    className="px-3 py-2 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
+                  >
+                    🖼️ Test Image Processing
+                  </button>
+                  <button
+                    onClick={() => triggerN8nWorkflow('VIDEO_PROCESSING')}
+                    className="px-3 py-2 text-xs font-medium text-orange-700 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors"
+                  >
+                    🎬 Test Video Services
+                  </button>
+                </div>
+              </div>
             </div>
           </>
         )}

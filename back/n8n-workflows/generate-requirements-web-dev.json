@@ -1,0 +1,195 @@
+{
+    "name": "Generate Requirements - Web Development",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "generate-requirements-web-dev",
+                "options": {}
+            },
+            "id": "WebhookGenReqWebDev",
+            "name": "Generate Requirements Webhook - Web Dev",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                160,
+                -16
+            ],
+            "webhookId": "gen-req-web-dev-webhook-id"
+        },
+        {
+            "parameters": {
+                "functionCode": "const body = items[0].json;\n\nconst messages = body.messages || [];\nconst sessionId = body.session_id || null;\nconst serviceType = 'WEB_DEV';\nconst companyName = body.company_name || null;\nconst phone = body.phone || null;\n\nlet conversation = messages\n  .map(m => `${(m.role || 'user').toUpperCase()}: ${m.content}`)\n  .join('\\n');\n\nconst prompt =\n  'You are a senior digital project product manager. Based on the following conversation, generate a structured project requirements document for a WEB DEVELOPMENT project.\\n\\n' +\n  'Document structure:\\n' +\n  '1. Client Background\\n' +\n  '2. Project Goals\\n' +\n  '3. Functional Requirements (by module: frontend, backend, admin, API, etc.)\\n' +\n  '4. Technical Requirements (frontend stack, backend, third-party integrations: payment, logistics, n8n, database, etc.)\\n' +\n  '5. Constraints (budget, timeline, existing systems, hardware environment, etc.)\\n' +\n  '6. Questions to Clarify & Risk Points\\n\\n' +\n  'Output in Markdown format with clear headings and bullet points.\\n\\n' +\n  'Conversation:\\n' +\n  conversation;\n\nreturn [\n  {\n    json: {\n      prompt,\n      session_id: sessionId,\n      service_type: serviceType,\n      company_name: companyName,\n      phone: phone\n    }\n  }\n];"
+            },
+            "id": "BuildPromptWebDev",
+            "name": "Build Prompt",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                384,
+                -16
+            ]
+        },
+        {
+            "parameters": {
+                "url": "https://api.openai.com/v1/chat/completions",
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "openAiApi",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "model",
+                            "value": "gpt-4"
+                        },
+                        {
+                            "name": "messages",
+                            "value": "=[{\"role\": \"user\", \"content\": \"{{ $json.prompt }}\"}]"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "CallAIWebDev",
+            "name": "Call AI to Summarize",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4,
+            "position": [
+                640,
+                -16
+            ],
+            "credentials": {
+                "openAiApi": {
+                    "id": "REPLACE_WITH_YOUR_OPENAI_CREDENTIAL_ID",
+                    "name": "OpenAI API"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "functionCode": "const completion = items[0].json;\n\nlet content = '';\n\nif (completion.choices && completion.choices[0] && completion.choices[0].message) {\n  content = completion.choices[0].message.content;\n} else {\n  content = JSON.stringify(completion, null, 2);\n}\n\nconst session_id = $items('Build Prompt', 0, 0).json.session_id;\nconst service_type = $items('Build Prompt', 0, 0).json.service_type;\nconst company_name = $items('Build Prompt', 0, 0).json.company_name;\nconst phone = $items('Build Prompt', 0, 0).json.phone;\n\nreturn [\n  {\n    json: {\n      requirements: content,\n      session_id,\n      service_type,\n      company_name,\n      phone\n    }\n  }\n];"
+            },
+            "id": "ExtractReqWebDev",
+            "name": "Extract Requirements",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                912,
+                -16
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "insert",
+                "schema": "public",
+                "table": "requirements",
+                "columns": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "session_id": "={{ $json.session_id }}",
+                        "service_type": "={{ $json.service_type }}",
+                        "company_name": "={{ $json.company_name }}",
+                        "phone": "={{ $json.phone }}",
+                        "requirements": "={{ $json.requirements }}",
+                        "created_at": "={{ new Date().toISOString() }}"
+                    }
+                },
+                "options": {}
+            },
+            "id": "PostgresInsertReqWebDev",
+            "name": "Save Requirements to DB",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2,
+            "position": [
+                1168,
+                -16
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "REPLACE_WITH_YOUR_POSTGRES_CREDENTIAL_ID",
+                    "name": "PostgreSQL"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ { \"status\": \"ok\", \"service\": \"WEB_DEV\", \"session_id\": $json.session_id } }}"
+            },
+            "id": "RespondWebDev",
+            "name": "Respond to Webhook",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                1424,
+                -16
+            ]
+        }
+    ],
+    "connections": {
+        "Generate Requirements Webhook - Web Dev": {
+            "main": [
+                [
+                    {
+                        "node": "Build Prompt",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Build Prompt": {
+            "main": [
+                [
+                    {
+                        "node": "Call AI to Summarize",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Call AI to Summarize": {
+            "main": [
+                [
+                    {
+                        "node": "Extract Requirements",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Extract Requirements": {
+            "main": [
+                [
+                    {
+                        "node": "Save Requirements to DB",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Save Requirements to DB": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": true,
+    "settings": {
+        "executionOrder": "v1",
+        "callerPolicy": "workflowsFromSameOwner",
+        "executionTimeout": -1
+    },
+    "versionId": "gen-req-web-dev-v1",
+    "id": "GenReqWebDev",
+    "tags": []
+}
