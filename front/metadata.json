@@ -1,0 +1,7 @@
+{
+  "name": "DevFlow Concierge",
+  "description": "A professional AI-powered customer service interface for a software development agency. It gathers client requirements for Web, App, Image, and Video services and integrates with n8n for data processing.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

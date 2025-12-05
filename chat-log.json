@@ -1,0 +1,135 @@
+{
+  "name": "Chat Log to MySQL (with company & phone)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chat-log",
+        "options": {}
+      },
+      "id": "WebhookChatLog",
+      "name": "Chat Log Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        260,
+        300
+      ],
+      "webhookId": "chat-log-webhook-id"
+    },
+    {
+      "parameters": {
+        "functionCode": "const body = items[0].json;\n\n// 期望前端 / AI Studio 发送的结构：\n// {\n//   \"session_id\": \"abc123\",\n//   \"source\": \"ai-studio\",\n//   \"company_name\": \"客户公司名\",\n//   \"phone\": \"+33...\",\n//   \"messages\": [\n//     { \"role\": \"user\", \"content\": \"客户说的话...\" },\n//     { \"role\": \"ai\", \"content\": \"AI 回答...\" }\n//   ]\n// }\n\nconst sessionId = body.session_id || null;\nconst source = body.source || 'unknown';\nconst companyName = body.company_name || null;\nconst phone = body.phone || null;\nconst messages = body.messages || [];\n\nconst now = new Date().toISOString().slice(0, 19).replace('T', ' ');\n\nconst newItems = messages.map(m => {\n  return {\n    json: {\n      session_id: sessionId,\n      company_name: companyName,\n      phone: phone,\n      role: m.role || 'user',\n      content: m.content || '',\n      source: source,\n      created_at: now\n    }\n  };\n});\n\nreturn newItems;"
+      },
+      "id": "FunctionSplitMessages",
+      "name": "Split Messages",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        520,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "messages",
+        "columns": "session_id, company_name, phone, role, content, source, created_at",
+        "options": {}
+      },
+      "id": "MySqlInsertMessages",
+      "name": "Insert Messages",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2,
+      "position": [
+        800,
+        300
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "REPLACE_WITH_YOUR_MYSQL_CREDENTIAL_ID",
+          "name": "My MySQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "responseBodyType": "json",
+        "responseBody": "={{ { \"status\": \"ok\", \"items_inserted\": $items().length } }}"
+      },
+      "id": "RespondChatLog",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1080,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CREATE TABLE IF NOT EXISTS `messages` (\n  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,\n  `session_id` VARCHAR(255) NOT NULL,\n  `company_name` VARCHAR(255) NULL,\n  `phone` VARCHAR(50) NULL,\n  `role` ENUM('user', 'ai', 'system', 'commercial') NOT NULL,\n  `content` TEXT NOT NULL,\n  `source` VARCHAR(100) DEFAULT NULL,\n  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`),\n  KEY `idx_session_id` (`session_id`),\n  KEY `idx_company_phone` (`company_name`, `phone`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;\n\nALTER TABLE `messages`\n  ADD COLUMN IF NOT EXISTS `company_name` VARCHAR(255) NULL AFTER `session_id`,\n  ADD COLUMN IF NOT EXISTS `phone` VARCHAR(50) NULL AFTER `company_name`;\n",
+        "options": {}
+      },
+      "id": "InitDbMessages",
+      "name": "Init DB (run once)",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2,
+      "position": [
+        540,
+        520
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "REPLACE_WITH_YOUR_MYSQL_CREDENTIAL_ID",
+          "name": "My MySQL"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Chat Log Webhook": {
+      "main": [
+        [
+          {
+            "node": "Split Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Messages": {
+      "main": [
+        [
+          {
+            "node": "Insert Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Messages": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionTimeout": -1
+  },
+  "versionId": "chat-log-v1",
+  "id": "ChatLogToMySQL",
+  "tags": []
+}

@@ -1,0 +1,286 @@
+{
+  "name": "Chat Log to MySQL & Generate Requirements",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-requirements",
+        "options": {}
+      },
+      "id": "13a0f12a-6dd9-4dbc-921d-6718f8759a5c",
+      "name": "Generate Requirements Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        160,
+        -16
+      ],
+      "webhookId": "5118e837-001b-40ed-837f-9f0dfec3b7e6"
+    },
+    {
+      "parameters": {
+        "functionCode": "const body = items[0].json;\n\n// 前端传进来的数据结构期望是：\n// {\n//   \"session_id\": \"abc123\",\n//   \"email_to\": \"client@example.com\",\n//   \"messages\": [\n//     { \"role\": \"user\", \"content\": \"...\" },\n//     { \"role\": \"ai\", \"content\": \"...\" },\n//     ...\n//   ]\n// }\n\nconst messages = body.messages || [];\n\n// 把对话拼成一段文本\nlet conversation = messages\n  .map(m => `${(m.role || 'user').toUpperCase()}: ${m.content}`)\n  .join('\\n');\n\nconst prompt =\n  '你是一名资深数字化项目产品经理。请根据以下完整对话生成一份结构化的项目需求文档。\\n\\n' +\n  '文档结构：\\n' +\n  '1. 客户背景\\n' +\n  '2. 项目目标\\n' +\n  '3. 功能需求（按模块分：前台、后台、管理端、API 等）\\n' +\n  '4. 技术要求（前端技术栈、后端、第三方集成：支付、物流、n8n、数据库等）\\n' +\n  '5. 约束条件（预算、时间节点、现有系统、硬件环境等）\\n' +\n  '6. 待确认问题与风险点\\n\\n' +\n  '请用 Markdown 格式输出，标题小节清晰，条理化列点。\\n\\n' +\n  '下面是对话内容：\\n' +\n  conversation;\n\nreturn [\n  {\n    json: {\n      prompt,\n      email_to: body.email_to,\n      session_id: body.session_id || null\n    }\n  }\n];\n"
+      },
+      "id": "169dbc92-1b6b-4ea4-ab6b-b20d74a7f60a",
+      "name": "Build Prompt",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        384,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.openai.com/v1/chat/completions",
+        "jsonParameters": true,
+        "options": {}
+      },
+      "id": "04048f0a-8b25-4345-96d5-8f92401adff5",
+      "name": "Call AI to Summarize",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [
+        640,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const completion = items[0].json;\n\nlet content = '';\n\nif (completion.choices && completion.choices[0] && completion.choices[0].message) {\n  content = completion.choices[0].message.content;\n} else {\n  // 如果结构不符合预期，就直接把原始 JSON 输出出来，方便 debug\n  content = JSON.stringify(completion, null, 2);\n}\n\n// 从上游节点 “Build Prompt” 把 email_to / session_id 取回来\nconst email_to = $items('Build Prompt', 0, 0).json.email_to;\nconst session_id = $items('Build Prompt', 0, 0).json.session_id;\n\nreturn [\n  {\n    json: {\n      requirements: content,\n      email_to,\n      session_id\n    }\n  }\n];\n"
+      },
+      "id": "c36592fc-0926-4305-b04b-4a9b39d16380",
+      "name": "Extract Requirements",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        912,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "contact@easy-store.tech",
+        "toEmail": "={{$json[\"email_to\"]}}",
+        "subject": "新需求文档 - Session {{ $json[\"session_id\"] || \"\" }}",
+        "options": {}
+      },
+      "id": "aed7e48a-7ad5-4083-bb13-04a14f1c63cd",
+      "name": "Send Requirements Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        1168,
+        -16
+      ],
+      "webhookId": "69681882-185d-4071-92e7-1130020d62c4",
+      "credentials": {
+        "smtp": {
+          "id": "GYOTEth6fn9afK3u",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "ff443f0f-a223-4faf-9ec6-389b567aac3a",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1424,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chat-log",
+        "options": {}
+      },
+      "id": "2d4c0796-08f0-4f38-a93c-396f1dd168c8",
+      "name": "Chat Log Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        304,
+        352
+      ],
+      "webhookId": "d29edc14-7622-41d4-aa8d-e9bcf4278484"
+    },
+    {
+      "parameters": {
+        "functionCode": "const body = items[0].json;\n\n// 期望前端 / AI Studio 发送的结构：\n// {\n//   \"session_id\": \"abc123\",\n//   \"source\": \"ai-studio\",\n//   \"company_name\": \"客户公司名\",\n//   \"phone\": \"+33...\",\n//   \"messages\": [\n//     { \"role\": \"user\", \"content\": \"客户说的话...\" },\n//     { \"role\": \"ai\", \"content\": \"AI 回答...\" }\n//   ]\n// }\n\nconst sessionId = body.session_id || null;\nconst source = body.source || 'unknown';\nconst companyName = body.company_name || null;\nconst phone = body.phone || null;\nconst messages = body.messages || [];\n\nconst now = new Date().toISOString().slice(0, 19).replace('T', ' ');\n\nconst newItems = messages.map(m => {\n  return {\n    json: {\n      session_id: sessionId,\n      company_name: companyName,\n      phone: phone,\n      role: m.role || 'user',\n      content: m.content || '',\n      source: source,\n      created_at: now\n    }\n  };\n});\n\nreturn newItems;"
+      },
+      "id": "02a95628-ea0c-46da-80f1-4c8cada63947",
+      "name": "Split Messages",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        576,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "table": "messages",
+        "options": {}
+      },
+      "id": "e8460c8f-ef60-47a9-8048-a92eb9636172",
+      "name": "Insert Messages",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2,
+      "position": [
+        848,
+        352
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "dRaCVbSr0VbhPh1h",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "71d57a6f-2fe2-4d58-a28f-f005628d361f",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1136,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "ALTER TABLE messages\n  ADD COLUMN IF NOT EXISTS company_name VARCHAR(255) NULL AFTER session_id,\n  ADD COLUMN IF NOT EXISTS phone VARCHAR(50) NULL AFTER company_name;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        1232,
+        560
+      ],
+      "id": "65daead0-61d7-4b3b-bab4-9a945f96cfea",
+      "name": "Execute a SQL query1",
+      "credentials": {
+        "mySql": {
+          "id": "dRaCVbSr0VbhPh1h",
+          "name": "MySQL account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Generate Requirements Webhook": {
+      "main": [
+        [
+          {
+            "node": "Build Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Prompt": {
+      "main": [
+        [
+          {
+            "node": "Call AI to Summarize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call AI to Summarize": {
+      "main": [
+        [
+          {
+            "node": "Extract Requirements",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Requirements": {
+      "main": [
+        [
+          {
+            "node": "Send Requirements Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Requirements Email": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Log Webhook": {
+      "main": [
+        [
+          {
+            "node": "Split Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Messages": {
+      "main": [
+        [
+          {
+            "node": "Insert Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Messages": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionTimeout": -1,
+    "availableInMCP": false
+  },
+  "versionId": "c16aaa72-7f35-4b2e-b83d-42d562fd9385",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3060b8b75b37154c307090a9b569e880a4cb16d938bfa3136a919fd297a26d80"
+  },
+  "id": "oRbvszY6YU39y99t",
+  "tags": []
+}
