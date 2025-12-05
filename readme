@@ -1,2 +1,6 @@
 n8n_password: 5&14^Ndgs1Gr
 postgres_password: 32gdF.2`HR'n
+
+restauration version:
+git checkout v1.0  # Restaurer version 1
+git checkout v2.0  # Restaurer version 2

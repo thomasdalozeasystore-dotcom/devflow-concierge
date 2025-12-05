@@ -218,6 +218,16 @@ export default function App() {
         { role: 'user', content: 'Yes, professional color grading, smooth transitions, and our company branding.' },
         { role: 'model', content: 'What is your deadline and what format do you need for delivery?' },
         { role: 'user', content: 'We need it in 2 weeks, MP4 format for YouTube and social media.' }
+      ],
+      'FAQ': [
+        { role: 'user', content: 'What services does Easy Tech offer?' },
+        { role: 'model', content: 'We offer Website Development, Mobile App Development, Image Processing, and Video Services. Which interests you?' },
+        { role: 'user', content: 'How much does a typical website cost?' },
+        { role: 'model', content: 'Prices vary based on complexity. A basic site starts around €3000, while e-commerce sites range from €5000-€15000. What features do you need?' },
+        { role: 'user', content: 'What is your typical project timeline?' },
+        { role: 'model', content: 'Simple websites take 2-4 weeks, complex apps 2-3 months. Do you have a specific deadline?' },
+        { role: 'user', content: 'Do you offer maintenance after delivery?' },
+        { role: 'model', content: 'Yes! We offer monthly maintenance packages starting at €200/month. Would you like more details?' }
       ]
     };
     return conversations[serviceName] || conversations['WEB_DEV'];
@@ -425,36 +435,44 @@ export default function App() {
                 onEnd={handleEndCall}
               />
 
-              {/* n8n Test Buttons */}
-              <div className="bg-white border-t border-slate-200 p-4">
-                <p className="text-xs font-semibold text-slate-600 mb-3 uppercase tracking-wide">Test n8n Workflows</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => triggerN8nWorkflow('WEB_DEV')}
-                    className="px-3 py-2 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
-                  >
-                    🌐 Test Website Chat
-                  </button>
-                  <button
-                    onClick={() => triggerN8nWorkflow('APP_DEV')}
-                    className="px-3 py-2 text-xs font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors"
-                  >
-                    📱 Test Mobile App Chat
-                  </button>
-                  <button
-                    onClick={() => triggerN8nWorkflow('IMAGE_PROCESSING')}
-                    className="px-3 py-2 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
-                  >
-                    🖼️ Test Image Processing
-                  </button>
-                  <button
-                    onClick={() => triggerN8nWorkflow('VIDEO_PROCESSING')}
-                    className="px-3 py-2 text-xs font-medium text-orange-700 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors"
-                  >
-                    🎬 Test Video Services
-                  </button>
-                </div>
+              {/* n8n Test Buttons - Commented out for production */}
+              {/* 
+            <div className="p-4 border-t border-slate-200 bg-white">
+              <div className="mb-2 text-xs font-semibold text-slate-600">n8n Test Buttons</div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => triggerN8nWorkflow('WEB_DEV')}
+                  className="px-3 py-2 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600 transition-colors"
+                >
+                  🌐 Test Website Chat
+                </button>
+                <button
+                  onClick={() => triggerN8nWorkflow('APP_DEV')}
+                  className="px-3 py-2 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition-colors"
+                >
+                  📱 Test Mobile App Chat
+                </button>
+                <button
+                  onClick={() => triggerN8nWorkflow('IMAGE_PROCESSING')}
+                  className="px-3 py-2 bg-purple-500 text-white rounded-lg text-sm hover:bg-purple-600 transition-colors"
+                >
+                  🖼️ Test Image Processing
+                </button>
+                <button
+                  onClick={() => triggerN8nWorkflow('VIDEO_PROCESSING')}
+                  className="px-3 py-2 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 transition-colors"
+                >
+                  🎬 Test Video Services
+                </button>
+                <button
+                  onClick={() => triggerN8nWorkflow('FAQ')}
+                  className="px-3 py-2 bg-yellow-500 text-white rounded-lg text-sm hover:bg-yellow-600 transition-colors col-span-2"
+                >
+                  ❓ Test FAQ Chat
+                </button>
               </div>
+            </div>
+            */}
             </div>
           </>
         )}

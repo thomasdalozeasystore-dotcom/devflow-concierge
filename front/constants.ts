@@ -52,6 +52,12 @@ export const SERVICES: ServiceDefinition[] = [
     title: "Video Services",
     description: "Editing, post-production, VFX, and format optimization.",
     icon: "🎬"
+  },
+  {
+    id: ServiceType.FAQ,
+    title: "FAQ & Support",
+    description: "General questions about our services, pricing, timelines, and processes.",
+    icon: "❓"
   }
 ];
 
