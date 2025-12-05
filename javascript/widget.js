@@ -91,6 +91,14 @@
                 placeholder="Type your message..."
                 autocomplete="off"
               />
+              <button id="easytech-voice-button" class="easytech-voice-button" title="Speak">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                  <line x1="12" y1="19" x2="12" y2="23"></line>
+                  <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+              </button>
               <button id="easytech-send-button" class="easytech-send-button" style="background-color: ${this.config.primaryColor}">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <line x1="22" y1="2" x2="11" y2="13"></line>
@@ -112,14 +120,68 @@
       const chatButton = document.getElementById('easytech-chat-button');
       const closeButton = document.getElementById('easytech-close-button');
       const sendButton = document.getElementById('easytech-send-button');
+      const voiceButton = document.getElementById('easytech-voice-button');
       const messageInput = document.getElementById('easytech-message-input');
 
       chatButton.addEventListener('click', () => this.toggleChat());
       closeButton.addEventListener('click', () => this.close());
       sendButton.addEventListener('click', () => this.sendMessage());
+      
+      // Voice input listener
+      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        voiceButton.addEventListener('click', () => this.toggleVoice());
+      } else {
+        voiceButton.style.display = 'none'; // Hide if not supported
+      }
+
       messageInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') this.sendMessage();
       });
+    },
+
+    /**
+     * Toggle voice recognition
+     */
+    toggleVoice: function() {
+      if (this.isRecording) {
+        this.recognition.stop();
+        return;
+      }
+
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      this.recognition = new SpeechRecognition();
+      this.recognition.lang = 'fr-FR'; // Default to French based on context
+      this.recognition.interimResults = false;
+
+      this.recognition.onstart = () => {
+        this.isRecording = true;
+        const btn = document.getElementById('easytech-voice-button');
+        btn.classList.add('listening');
+        document.getElementById('easytech-message-input').placeholder = "Listening...";
+      };
+
+      this.recognition.onend = () => {
+        this.isRecording = false;
+        const btn = document.getElementById('easytech-voice-button');
+        btn.classList.remove('listening');
+        document.getElementById('easytech-message-input').placeholder = "Type your message...";
+      };
+
+      this.recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        const input = document.getElementById('easytech-message-input');
+        input.value = transcript;
+        input.focus();
+        // Optional: Auto-send
+        // this.sendMessage();
+      };
+
+      this.recognition.onerror = (event) => {
+        console.error('Speech recognition error', event.error);
+        this.recognition.stop();
+      };
+
+      this.recognition.start();
     },
 
     /**

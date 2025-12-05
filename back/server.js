@@ -2,8 +2,15 @@ import express from 'express';
 import cors from 'cors';
 import pg from 'pg';
 import dotenv from 'dotenv';
+import OpenAI from 'openai';
+import axios from 'axios';
+import * as cheerio from 'cheerio';
 
 dotenv.config();
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY || 'dummy-key', // Fallback for testing
+});
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -121,6 +128,71 @@ app.post('/api/users', async (req, res) => {
   }
 });
 
+// Helper: Fetch page content
+const fetchPageContent = async (url) => {
+  try {
+    if (!url || !url.startsWith('http')) return '';
+
+    console.log(`[Scraper] Fetching content for: ${url}`);
+    
+    // Fetch HTML
+    const response = await axios.get(url, { 
+      timeout: 5000,
+      headers: {
+        'User-Agent': 'EasyTechWidget/1.0'
+      }
+    });
+    
+    // Parse HTML
+    const $ = cheerio.load(response.data);
+    
+    // Remove unwanted elements
+    $('script, style, nav, footer, iframe, svg, noscript').remove();
+    
+    // Extract text from body
+    // Prioritize headings and paragraphs for better context
+    const headings = $('h1, h2, h3').map((i, el) => $(el).text()).get().join('\n');
+    const content = $('p, li').map((i, el) => $(el).text()).get().join('\n');
+    
+    let fullText = headings + '\n' + content;
+    
+    // Clean whitespace
+    fullText = fullText.replace(/\s+/g, ' ').trim();
+    
+    // Limit length to avoid token limits (approx 3000 chars)
+    return fullText.substring(0, 3000);
+  } catch (error) {
+    console.error(`[Scraper] Error fetching ${url}:`, error.message);
+    return 'Could not fetch page content.';
+  }
+};
+
+// Helper: Get AI response
+const getAIResponse = async (message, context) => {
+  try {
+    const completion = await openai.chat.completions.create({
+      messages: [
+        { 
+          role: "system", 
+          content: `You are a helpful AI assistant for a web agency. 
+          Use the following website content to answer the user's question. 
+          If the answer is not in the context, politely say you don't know and ask for contact details.
+          
+          Website Content:
+          ${context}` 
+        },
+        { role: "user", content: message }
+      ],
+      model: "gpt-3.5-turbo",
+    });
+
+    return completion.choices[0].message.content;
+  } catch (error) {
+    console.error('OpenAI Error:', error);
+    return "I'm having trouble connecting to my brain right now. Please try again later.";
+  }
+};
+
 // Widget chat endpoint
 app.post('/api/widget/chat', async (req, res) => {
   try {
@@ -130,14 +202,21 @@ app.post('/api/widget/chat', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Missing session_id or message' });
     }
     
+    // 1. Get page content
+    const pageUrl = metadata?.page_url || 'unknown';
+    const pageContext = await fetchPageContent(pageUrl);
+    
+    // Save user message
     await pool.query(
       `INSERT INTO chat_logs (session_id, service_type, company_name, role, content, timestamp, metadata) 
        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [session_id, 'WIDGET', metadata?.website_domain || 'unknown', 'user', message, new Date().toISOString(), JSON.stringify(metadata || {})]
     );
     
-    const aiResponse = `Thank you for your message: "${message}". How can I help you further?`;
+    // 2. Get AI response with context
+    const aiResponse = await getAIResponse(message, pageContext);
     
+    // Save AI response
     await pool.query(
       `INSERT INTO chat_logs (session_id, service_type, company_name, role, content, timestamp, metadata) 
        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
