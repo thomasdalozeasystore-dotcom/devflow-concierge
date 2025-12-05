@@ -1,0 +1,225 @@
+/**
+ * Easy Tech Chat Widget Styles
+ * Version: 1.0.0
+ */
+
+/* Widget Container */
+#easytech-chat-widget {
+  position: fixed;
+  z-index: 999999;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.easytech-widget-bottom-right {
+  bottom: 20px;
+  right: 20px;
+}
+
+.easytech-widget-bottom-left {
+  bottom: 20px;
+  left: 20px;
+}
+
+/* Chat Button */
+.easytech-chat-button {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.easytech-chat-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.easytech-chat-button:active {
+  transform: scale(0.95);
+}
+
+/* Chat Window */
+.easytech-chat-window {
+  position: absolute;
+  bottom: 80px;
+  right: 0;
+  width: 380px;
+  height: 600px;
+  max-height: calc(100vh - 120px);
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header */
+.easytech-chat-header {
+  padding: 20px;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.easytech-chat-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.easytech-chat-subtitle {
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.easytech-close-button {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.easytech-close-button:hover {
+  opacity: 1;
+}
+
+/* Messages Container */
+.easytech-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  background: #f9fafb;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.easytech-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.easytech-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.easytech-messages::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+/* Messages */
+.easytech-message {
+  padding: 12px 16px;
+  border-radius: 12px;
+  max-width: 80%;
+  word-wrap: break-word;
+  font-size: 14px;
+  line-height: 1.5;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.easytech-message-user {
+  background: #6366f1;
+  color: white;
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+
+.easytech-message-model {
+  background: white;
+  color: #1f2937;
+  align-self: flex-start;
+  border: 1px solid #e5e7eb;
+  border-bottom-left-radius: 4px;
+}
+
+/* Input Container */
+.easytech-input-container {
+  padding: 16px;
+  background: white;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  gap: 8px;
+}
+
+.easytech-message-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 24px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.easytech-message-input:focus {
+  border-color: #6366f1;
+}
+
+.easytech-send-button {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+
+.easytech-send-button:hover {
+  transform: scale(1.05);
+}
+
+.easytech-send-button:active {
+  transform: scale(0.95);
+}
+
+/* Mobile Responsive */
+@media (max-width: 480px) {
+  .easytech-chat-window {
+    width: calc(100vw - 40px);
+    height: calc(100vh - 100px);
+    bottom: 80px;
+    right: 20px;
+  }
+}

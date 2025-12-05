@@ -9,7 +9,10 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: '*', // Allow all origins for widget testing
+  credentials: true
+}));
 app.use(express.json());
 
 // PostgreSQL connection pool
@@ -115,6 +118,52 @@ app.post('/api/users', async (req, res) => {
     }
     
     res.status(500).json({ success: false, error: 'Failed to create user' });
+  }
+});
+
+// Widget chat endpoint
+app.post('/api/widget/chat', async (req, res) => {
+  try {
+    const { session_id, message, metadata } = req.body;
+    
+    if (!session_id || !message) {
+      return res.status(400).json({ success: false, error: 'Missing session_id or message' });
+    }
+    
+    await pool.query(
+      `INSERT INTO chat_logs (session_id, service_type, company_name, role, content, timestamp, metadata) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [session_id, 'WIDGET', metadata?.website_domain || 'unknown', 'user', message, new Date().toISOString(), JSON.stringify(metadata || {})]
+    );
+    
+    const aiResponse = `Thank you for your message: "${message}". How can I help you further?`;
+    
+    await pool.query(
+      `INSERT INTO chat_logs (session_id, service_type, company_name, role, content, timestamp, metadata) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [session_id, 'WIDGET', metadata?.website_domain || 'unknown', 'model', aiResponse, new Date().toISOString(), JSON.stringify(metadata || {})]
+    );
+    
+    res.json({ success: true, response: aiResponse, session_id });
+  } catch (error) {
+    console.error('Error in widget chat:', error);
+    res.status(500).json({ success: false, error: 'Failed to process message' });
+  }
+});
+
+// Get widget chat history
+app.get('/api/widget/history/:sessionId', async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const result = await pool.query(
+      `SELECT role, content, timestamp, metadata FROM chat_logs 
+       WHERE session_id = $1 AND service_type = 'WIDGET' ORDER BY timestamp ASC`,
+      [sessionId]
+    );
+    res.json({ success: true, messages: result.rows });
+  } catch (error) {
+    console.error('Error fetching chat history:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch history' });
   }
 });
 

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Easy Tech Chat Widget - Demo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        h1 {
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            margin-bottom: 32px;
+        }
+
+        .section {
+            margin-bottom: 32px;
+        }
+
+        .section h2 {
+            color: #374151;
+            font-size: 20px;
+            margin-bottom: 16px;
+        }
+
+        .code-block {
+            background: #f3f4f6;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            border: 1px solid #e5e7eb;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .feature-list li {
+            padding: 8px 0;
+            padding-left: 28px;
+            position: relative;
+        }
+
+        .feature-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #10b981;
+            font-weight: bold;
+        }
+
+        .button {
+            background: #6366f1;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.2s;
+        }
+
+        .button:hover {
+            background: #4f46e5;
+        }
+    </style>
+
+    <!-- Include Widget CSS -->
+    <link rel="stylesheet" href="widget.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>🚀 Easy Tech Chat Widget</h1>
+        <p class="subtitle">Embeddable chat widget for your website</p>
+
+        <div class="section">
+            <h2>✨ Features</h2>
+            <ul class="feature-list">
+                <li>Easy integration with a single script tag</li>
+                <li>Customizable colors and position</li>
+                <li>Persistent chat history</li>
+                <li>Mobile responsive design</li>
+                <li>Automatic session management</li>
+                <li>Metadata tracking (page URL, user agent, etc.)</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>📦 Installation</h2>
+            <p>Add this code to your website:</p>
+            <div class="code-block">
+                &lt;!-- Include Widget CSS --&gt;<br>
+                &lt;link rel="stylesheet" href="https://yoursite.com/widget.css"&gt;<br>
+                <br>
+                &lt;!-- Include Widget JS --&gt;<br>
+                &lt;script src="https://yoursite.com/widget.js"&gt;&lt;/script&gt;<br>
+                <br>
+                &lt;!-- Initialize Widget --&gt;<br>
+                &lt;script&gt;<br>
+                &nbsp;&nbsp;EasyTechChat.init({<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;apiUrl: 'http://localhost:5000',<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;position: 'bottom-right',<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;primaryColor: '#6366f1',<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;title: 'Chat with us',<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;subtitle: 'We typically reply in a few minutes'<br>
+                &nbsp;&nbsp;});<br>
+                &lt;/script&gt;
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🎨 Configuration Options</h2>
+            <div class="code-block">
+                {<br>
+                &nbsp;&nbsp;apiUrl: 'http://localhost:5000',&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Backend API URL<br>
+                &nbsp;&nbsp;position: 'bottom-right',&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;//
+                'bottom-right' or 'bottom-left'<br>
+                &nbsp;&nbsp;primaryColor: '#6366f1',&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;//
+                Widget color<br>
+                &nbsp;&nbsp;title: 'Chat with
+                us',&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Header title<br>
+                &nbsp;&nbsp;subtitle: 'We reply quickly'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Header
+                subtitle<br>
+                }
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🧪 Try it now!</h2>
+            <p>Click the chat button in the bottom-right corner to test the widget.</p>
+            <button class="button" onclick="EasyTechChat.open()">Open Chat Widget</button>
+        </div>
+
+        <div class="section">
+            <h2>📊 Database Integration</h2>
+            <p>All messages are automatically saved to PostgreSQL:</p>
+            <div class="code-block">
+                -- View all widget chats<br>
+                SELECT * FROM widget_chats;<br>
+                <br>
+                -- View with metadata<br>
+                SELECT session_id, content, metadata->>'page_url' as page<br>
+                FROM chat_logs<br>
+                WHERE service_type = 'WIDGET';
+            </div>
+        </div>
+    </div>
+
+    <!-- Include Widget JS -->
+    <script src="widget.js"></script>
+
+    <!-- Initialize Widget -->
+    <script>
+        EasyTechChat.init({
+            apiUrl: 'http://localhost:5000',
+            position: 'bottom-right',
+            primaryColor: '#6366f1',
+            title: 'Chat with Easy Tech',
+            subtitle: 'Ask us anything!'
+        });
+    </script>
+</body>
+
+</html>
